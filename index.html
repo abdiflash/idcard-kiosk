@@ -393,7 +393,7 @@ function previewSpecificPhoto(url, el) {
     if (el) el.classList.add('active');
 }
 
-// === 5. JEPRET FOTO & RENDER CARD (DINCONDENSED-BOLD KHUSUS DI CANVAS) ===
+// === 5. JEPRET FOTO & RENDER CARD (PRESISI 1:1 DENGAN LINGKARAN PANDUAN UI) ===
 async function captureAndGenerate() {
     if (!selectedSiswa) return;
 
@@ -408,11 +408,33 @@ async function captureAndGenerate() {
     const photoCanvas = document.getElementById('photoCanvas');
     const pCtx = photoCanvas.getContext('2d');
 
-    photoCanvas.width = video.videoWidth || 1920;
-    photoCanvas.height = video.videoHeight || 1080;
+    // 1. Ambil resolusi asli kamera (misal: 1920x1080)
+    const W_src = video.videoWidth || 1920;
+    const H_src = video.videoHeight || 1080;
+
+    photoCanvas.width = W_src;
+    photoCanvas.height = H_src;
     pCtx.drawImage(video, 0, 0);
     const photoSrc = photoCanvas.toDataURL('image/png');
 
+    // 2. HITUNG SKALA PRESISI DARI LINGKARAN UI DIBANDINGKAN RAW STREAM
+    const videoRect = video.getBoundingClientRect();
+    const cropGuide = document.querySelector('.crop-guide');
+    const guideRect = cropGuide.getBoundingClientRect();
+
+    const W_ui = videoRect.width;
+    const H_ui = videoRect.height;
+
+    // Faktor skala object-fit: cover pada UI
+    const scaleUI = Math.max(W_ui / W_src, H_ui / H_src);
+
+    // Jari-jari lingkaran panduan hijau di UI
+    const R_ui = guideRect.width / 2;
+
+    // Jari-jari lingkaran panduan jika dipetakan ke resolusi asli foto (Raw Space)
+    const R_src = R_ui / scaleUI;
+
+    // 3. RENDER PADA ID CARD CANVAS (1140 x 1800 DPI)
     const cardCanvas = document.getElementById('cardCanvas');
     const ctx = cardCanvas.getContext('2d');
     
@@ -432,23 +454,25 @@ async function captureAndGenerate() {
         const photoImg = new Image();
         photoImg.src = photoSrc;
         photoImg.onload = () => {
-            const centerX = 570;   
-            const radius = 330;    
-            const centerY = 950;   
+            const centerX = 570;   // Pusat X Lingkaran di ID Card
+            const centerY = 950;   // Pusat Y Lingkaran di ID Card
+            const R_card = 330;    // Jari-jari Lingkaran di ID Card (Diameter 660px)
 
             ctx.save();
             ctx.beginPath();
-            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2, false);
+            ctx.arc(centerX, centerY, R_card, 0, Math.PI * 2, false);
             ctx.clip();
 
-            let scale = Math.max((radius * 2) / photoImg.width, (radius * 2) / photoImg.height);
-            let w = photoImg.width * scale;
-            let h = photoImg.height * scale;
+            // Pemetaan skala dari Lingkaran UI ke Lingkaran ID Card
+            const scaleToCard = R_card / R_src;
+            const wDraw = W_src * scaleToCard;
+            const hDraw = H_src * scaleToCard;
             
-            let imgX = centerX - (w / 2);
-            let imgY = centerY - (h / 2);
+            // Posisi X & Y agar pusat lingkaran foto pas di pusat lingkaran ID Card
+            const imgX = centerX - ((W_src / 2) * scaleToCard);
+            const imgY = centerY - ((H_src / 2) * scaleToCard);
 
-            ctx.drawImage(photoImg, imgX, imgY, w, h);
+            ctx.drawImage(photoImg, imgX, imgY, wDraw, hDraw);
             ctx.restore();
 
             // RENDER TEKS NAMA (MENGGUNAKAN FONT DINCONDENSED-BOLD)
@@ -496,7 +520,6 @@ async function captureAndGenerate() {
         renderCard(null);
     }
 }
-
 // === 6. UNDUH MULTIPLE SHOTS DALAM FORMAT NAMAKARYAWAN.ZIP ===
 async function downloadPersonZip() {
     if (!selectedSiswa || !selectedSiswa.photos || selectedSiswa.photos.length === 0) {
