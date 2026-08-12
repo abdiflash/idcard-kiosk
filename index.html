@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ID Card Kiosk — 300 DPI Hi-Res Print Ready</title>
+    <title>ID Card Kiosk — 300 DPI (DINCondensed-Bold Card Only)</title>
     
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
@@ -11,7 +11,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
     <style>
-        /* Custom Font DINCondensed-Bold */
+        /* 1. Google Font Montserrat khusus Tampilan UI Kiosk Web */
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
+
+        /* 2. Custom Font DINCondensed-Bold khusus Teks pada ID Card Canvas */
         @font-face {
             font-family: 'DINCondensed-Bold';
             src: local('DINCondensed-Bold'), 
@@ -23,34 +26,35 @@
             font-style: normal;
         }
 
-        * { box-sizing: border-box; font-family: 'DINCondensed-Bold', 'DIN Condensed', 'Arial Narrow', sans-serif; }
+        /* Tampilan UI Kiosk menggunakan Montserrat */
+        * { box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
         body { background-color: #f1f5f9; color: #0f172a; margin: 0; padding: 20px; }
         
         .header { background: #0f172a; color: #ffffff; padding: 18px 24px; border-radius: 14px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid #16a34a; }
-        .header h1 { margin: 0; font-size: 26px; font-weight: bold; letter-spacing: 1px; }
-        .status-badge { background: #16a34a; color: #ffffff; padding: 6px 14px; border-radius: 20px; font-size: 16px; font-weight: bold; }
+        .header h1 { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: 0.5px; }
+        .status-badge { background: #16a34a; color: #ffffff; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; }
 
         .container { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 24px; max-width: 1450px; margin: 0 auto; }
         .card-panel { background: #ffffff; padding: 24px; border-radius: 18px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); }
 
-        label { display: block; font-size: 15px; font-weight: bold; color: #475569; margin-top: 14px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
-        input[type="file"], input[type="text"], select { width: 100%; padding: 10px 14px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; outline: none; transition: all 0.2s; background: #f8fafc; font-family: 'DINCondensed-Bold', 'Arial Narrow', sans-serif; }
+        label { display: block; font-size: 12px; font-weight: 700; color: #475569; margin-top: 14px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        input[type="file"], input[type="text"], select { width: 100%; padding: 11px 14px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 14px; outline: none; transition: all 0.2s; background: #f8fafc; font-family: 'Montserrat', sans-serif; }
         input[type="text"]:focus, select:focus { border-color: #2563eb; background: #ffffff; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
 
         .cam-controls { display: flex; gap: 10px; }
-        .btn-refresh { background: #475569; color: white; border: none; padding: 10px 16px; border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 15px; }
+        .btn-refresh { background: #475569; color: white; border: none; padding: 10px 16px; border-radius: 10px; cursor: pointer; font-weight: 700; transition: 0.2s; font-family: 'Montserrat', sans-serif; }
         .btn-refresh:hover { background: #334155; }
 
         .student-list { max-height: 230px; overflow-y: auto; border: 2px solid #f1f5f9; border-radius: 10px; margin-top: 8px; background: #fafafa; }
-        .student-item { padding: 10px 15px; border-bottom: 1px solid #f1f5f9; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: 0.15s; font-size: 16px; }
+        .student-item { padding: 11px 15px; border-bottom: 1px solid #f1f5f9; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: 0.15s; font-size: 14px; }
         .student-item:hover { background: #eff6ff; }
-        .student-item.selected { background: #1d4ed8; color: #ffffff; font-weight: bold; }
+        .student-item.selected { background: #1d4ed8; color: #ffffff; font-weight: 700; }
 
         .video-container { position: relative; width: 100%; height: 350px; background: #000000; border-radius: 14px; overflow: hidden; margin-top: 10px; border: 3px solid #cbd5e1; }
         #webcamVideo { width: 100%; height: 100%; object-fit: cover; }
         .crop-guide { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 240px; height: 240px; border: 3px dashed #16a34a; border-radius: 50%; pointer-events: none; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55); }
 
-        .btn-action { width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 12px; transition: 0.2s; text-transform: uppercase; letter-spacing: 1px; }
+        .btn-action { width: 100%; padding: 15px; border: none; border-radius: 12px; font-size: 15px; font-weight: 800; cursor: pointer; margin-top: 12px; transition: 0.2s; text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Montserrat', sans-serif; }
         .btn-snap { background: #16a34a; color: white; box-shadow: 0 4px 14px rgba(22, 163, 74, 0.3); }
         .btn-snap:hover { background: #15803d; transform: translateY(-1px); }
         .btn-snap:disabled { background: #94a3b8; cursor: not-allowed; box-shadow: none; transform: none; }
@@ -58,7 +62,7 @@
         .btn-download-person { background: #2563eb; color: white; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3); }
         .btn-download-person:hover { background: #1d4ed8; }
         
-        .btn-reset-person { background: #ef4444; color: white; padding: 10px; font-size: 14px; font-weight: bold; margin-top: 8px; border: none; border-radius: 8px; cursor: pointer; width: 100%; }
+        .btn-reset-person { background: #ef4444; color: white; padding: 10px; font-size: 12px; font-weight: 700; margin-top: 8px; border: none; border-radius: 8px; cursor: pointer; width: 100%; font-family: 'Montserrat', sans-serif; }
         .btn-reset-person:hover { background: #dc2626; }
 
         .preview-box { width: 310px; height: 490px; border: 2px dashed #cbd5e1; border-radius: 16px; margin: 15px auto; display: flex; align-items: center; justify-content: center; background: #ffffff; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.08); }
@@ -68,7 +72,7 @@
         .shot-thumb { width: 50px; height: 75px; border-radius: 6px; border: 2px solid #cbd5e1; object-fit: cover; cursor: pointer; transition: 0.2s; }
         .shot-thumb.active { border-color: #2563eb; transform: scale(1.05); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
 
-        .badge-status { font-size: 13px; padding: 3px 10px; border-radius: 12px; font-weight: bold; }
+        .badge-status { font-size: 11px; padding: 3px 10px; border-radius: 12px; font-weight: 700; }
         .badge-pending { background: #fef3c7; color: #92400e; }
         .badge-done { background: #dcfce7; color: #166534; }
     </style>
@@ -76,7 +80,7 @@
 <body>
 
 <div class="header">
-    <h1>📸 ID CARD KIOSK — HI-RES 300 DPI PRINT READY</h1>
+    <h1>📸 ID CARD KIOSK — SONY A7 (300 DPI HI-RES)</h1>
     <span class="status-badge" id="systemStatus">Menunggu Kamera...</span>
 </div>
 
@@ -104,7 +108,7 @@
         <input type="text" id="searchBox" placeholder="Ketik nama atau NIK/NPP..." onkeyup="filterData()">
 
         <div class="student-list" id="studentList">
-            <div style="padding:18px; color:#94a3b8; text-align:center; font-size:15px;">Belum ada data. Silakan unggah file Excel/CSV.</div>
+            <div style="padding:18px; color:#94a3b8; text-align:center; font-size:13px;">Belum ada data. Silakan unggah file Excel/CSV.</div>
         </div>
 
         <label>5. Live Feed Kamera (Posisikan Wajah dalam Lingkaran Hijau):</label>
@@ -117,15 +121,15 @@
     </div>
 
     <div class="card-panel" style="text-align: center;">
-        <h3 style="margin-top:0; font-size: 22px; color: #0f172a; letter-spacing: 0.5px;">PREVIEW ID CARD HASIL</h3>
-        <div id="activeInfo" style="font-size:15px; color:#64748b; min-height:45px;">Pilih data karyawan di daftar sebelah kiri</div>
+        <h3 style="margin-top:0; font-size: 18px; color: #0f172a;">PREVIEW ID CARD HASIL</h3>
+        <div id="activeInfo" style="font-size:13px; color:#64748b; min-height:45px;">Pilih data karyawan di daftar sebelah kiri</div>
 
         <div class="preview-box" id="cardPreview">
-            <span style="color:#94a3b8; font-size:15px;">Hasil ID Card akan tampil di sini</span>
+            <span style="color:#94a3b8; font-size:13px;">Hasil ID Card akan tampil di sini</span>
         </div>
 
         <div id="shotGallerySection" style="display:none; margin-top: 10px;">
-            <div style="font-size:14px; font-weight:bold; color:#475569; margin-bottom: 4px;">FOTO TERAMBIL (<span id="shotCount">0</span>x):</div>
+            <div style="font-size:12px; font-weight:700; color:#475569; margin-bottom: 4px;">FOTO TERAMBIL (<span id="shotCount">0</span>x):</div>
             <div class="shot-gallery" id="shotGallery"></div>
             
             <button class="btn-action btn-download-person" id="btnDownloadPerson" onclick="downloadPersonZip()">💾 UNDUH <span id="personZipName">...</span>.ZIP</button>
@@ -145,7 +149,7 @@ let selectedSiswa = null;
 let currentStream = null;
 let templateSrc = null;
 
-// FONT CONFIG
+// KHUSUS FONT UNTUK TEXT DI ATAS ID CARD CANVAS
 const CARD_FONT = "'DINCondensed-Bold', 'DIN Condensed', 'Arial Narrow', sans-serif";
 
 // === 1. MENDETEKSI & MEMUAT KAMERA USB ===
@@ -315,7 +319,7 @@ function renderSiswaList(list) {
     container.innerHTML = "";
 
     if (list.length === 0) {
-        container.innerHTML = `<div style="padding:15px; color:#94a3b8; text-align:center; font-size:15px;">Data tidak ditemukan.</div>`;
+        container.innerHTML = `<div style="padding:15px; color:#94a3b8; text-align:center; font-size:13px;">Data tidak ditemukan.</div>`;
         return;
     }
 
@@ -348,8 +352,8 @@ function selectSiswa(s) {
 
     document.getElementById('activeInfo').innerHTML = `
         Target Pemotretan:<br>
-        <b style="font-size:18px; color:#1d4ed8;">${s.nama}</b><br>
-        <span style="font-size:15px; color:#475569;">NIK/NPP: ${s.nik} ${s.unit ? '| Unit: ' + s.unit : ''}</span>
+        <b style="font-size:16px; color:#1d4ed8;">${s.nama}</b><br>
+        <span style="font-size:13px; color:#475569;">NIK/NPP: ${s.nik} ${s.unit ? '| Unit: ' + s.unit : ''}</span>
     `;
     document.getElementById('btnSnap').disabled = false;
     
@@ -366,7 +370,7 @@ function updatePersonGalleryUI() {
 
     if (!selectedSiswa || !selectedSiswa.photos || selectedSiswa.photos.length === 0) {
         gallerySection.style.display = 'none';
-        previewBox.innerHTML = `<span style="color:#94a3b8; font-size:15px;">Hasil ID Card akan tampil di sini</span>`;
+        previewBox.innerHTML = `<span style="color:#94a3b8; font-size:13px;">Hasil ID Card akan tampil di sini</span>`;
         return;
     }
 
@@ -374,11 +378,9 @@ function updatePersonGalleryUI() {
     shotCountSpan.textContent = selectedSiswa.photos.length;
     zipNameSpan.textContent = selectedSiswa.nama.toUpperCase();
 
-    // Render Preview Foto Terakhir
     const latestPhoto = selectedSiswa.photos[selectedSiswa.photos.length - 1];
     previewBox.innerHTML = `<img src="${latestPhoto}">`;
 
-    // Render Thumbnails
     galleryContainer.innerHTML = selectedSiswa.photos.map((photoUrl, idx) => `
         <img src="${photoUrl}" class="shot-thumb ${idx === selectedSiswa.photos.length - 1 ? 'active' : ''}" 
              onclick="previewSpecificPhoto('${photoUrl}', this)" title="Foto ke-${idx + 1}">
@@ -391,15 +393,15 @@ function previewSpecificPhoto(url, el) {
     if (el) el.classList.add('active');
 }
 
-// === 5. JEPRET FOTO & GENERATE ID CARD 300 DPI HI-RES (1140 x 1800 PX) ===
+// === 5. JEPRET FOTO & RENDER CARD (DINCONDENSED-BOLD KHUSUS DI CANVAS) ===
 async function captureAndGenerate() {
     if (!selectedSiswa) return;
 
-    // Load Custom Font
+    // Load DINCondensed-Bold khusus untuk Canvas Render
     try {
         await document.fonts.load(`bold 88px ${CARD_FONT}`);
     } catch (e) {
-        console.warn("Font preloading notice:", e);
+        console.warn("Font loading notice:", e);
     }
 
     const video = document.getElementById('webcamVideo');
@@ -414,13 +416,12 @@ async function captureAndGenerate() {
     const cardCanvas = document.getElementById('cardCanvas');
     const ctx = cardCanvas.getContext('2d');
     
-    // Smooth rendering quality for high resolution output
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     ctx.clearRect(0, 0, 1140, 1800);
 
     const renderCard = (bgImg) => {
-        // Render Background Template (High-Res 1140 x 1800)
+        // Background Template High-Res
         if (bgImg) {
             ctx.drawImage(bgImg, 0, 0, 1140, 1800);
         } else {
@@ -431,18 +432,15 @@ async function captureAndGenerate() {
         const photoImg = new Image();
         photoImg.src = photoSrc;
         photoImg.onload = () => {
-            // === SCALED COORDINATES FOR 300 DPI (2x Scale of 570x900) ===
-            const centerX = 570;   // 285 * 2
-            const radius = 330;    // 165 * 2
-            const centerY = 950;   // 475 * 2
+            const centerX = 570;   
+            const radius = 330;    
+            const centerY = 950;   
 
-            // Smooth Anti-Aliasing Circle Clip
             ctx.save();
             ctx.beginPath();
             ctx.arc(centerX, centerY, radius, 0, Math.PI * 2, false);
             ctx.clip();
 
-            // Skala Foto Presisi Lingkaran
             let scale = Math.max((radius * 2) / photoImg.width, (radius * 2) / photoImg.height);
             let w = photoImg.width * scale;
             let h = photoImg.height * scale;
@@ -453,39 +451,38 @@ async function captureAndGenerate() {
             ctx.drawImage(photoImg, imgX, imgY, w, h);
             ctx.restore();
 
-            // RENDER TEKS NAMA (DINCONDENSED-BOLD, HI-RES 88px)
+            // RENDER TEKS NAMA (MENGGUNAKAN FONT DINCONDENSED-BOLD)
             ctx.textAlign = "center";
             ctx.fillStyle = "#000000";
             ctx.font = `bold 88px ${CARD_FONT}`;
-            ctx.fillText(selectedSiswa.nama.toUpperCase(), centerX, 1390); // 695 * 2
+            ctx.fillText(selectedSiswa.nama.toUpperCase(), centerX, 1390);
 
-            // RENDER TEKS NIK / NPP (DINCONDENSED-BOLD, HI-RES 64px)
+            // RENDER TEKS NIK / NPP (MENGGUNAKAN FONT DINCONDENSED-BOLD)
             ctx.font = `bold 64px ${CARD_FONT}`;
             ctx.fillStyle = "#1e293b";
-            ctx.fillText(selectedSiswa.nik, centerX, 1484); // 742 * 2
+            ctx.fillText(selectedSiswa.nik, centerX, 1484);
 
-            // RENDER BARCODE HIGH RESOLUTION (DOUBLE SIZE)
+            // RENDER BARCODE
             try {
                 const bc = document.getElementById('barcodeCanvas');
                 JsBarcode(bc, selectedSiswa.nik, { 
                     format: "CODE128", 
                     displayValue: false, 
-                    height: 150,     // Scaled up
-                    width: 4.4,      // Scaled up for crisp lines
+                    height: 150,     
+                    width: 4.4,      
                     margin: 0 
                 });
-                ctx.drawImage(bc, (1140 - bc.width) / 2, 1550); // 775 * 2
+                ctx.drawImage(bc, (1140 - bc.width) / 2, 1550);
             } catch (e) {
                 console.error("Barcode Render Error:", e);
             }
 
-            // SIMPAN HASIL FOTO HIGH-RES KE ARRAY SISWA
+            // SIMPAN HASIL FOTO HIGH-RES
             const finalUrl = cardCanvas.toDataURL('image/png', 1.0);
             if (!selectedSiswa.photos) selectedSiswa.photos = [];
             selectedSiswa.photos.push(finalUrl);
             selectedSiswa.status = 'done';
 
-            // UPDATE TAMPILAN PREVIEW & GALERI
             updatePersonGalleryUI();
             renderSiswaList(siswaData);
         };
